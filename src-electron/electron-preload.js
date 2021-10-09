@@ -15,3 +15,22 @@
  *     doAThing: () => {}
  *   })
  */
+
+import { contextBridge, ipcRenderer } from 'electron'
+
+contextBridge.exposeInMainWorld('nic', {
+  request: () => {
+    ipcRenderer.send('getNetworkAddress')
+  },
+  onResponse: (fn) => {
+    ipcRenderer.on('networkInterfaces', (event, ...data) => {
+      fn(...data)
+    })
+  },
+})
+
+contextBridge.exposeInMainWorld('powerOff', {
+  request: () => {
+    ipcRenderer.send('powerOff')
+  },
+})
