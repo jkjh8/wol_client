@@ -38,7 +38,7 @@
                     :color="signal ? 'green' : ''"
                     :text-color="signal ? 'grey-1' : 'grey-10'"
                     :label="signal ? 'ON' : 'OFF'"
-                    @click="signal = !signal"
+                    @click="fnSendCommand('signal')"
                   ></q-btn>
                 </q-item-section>
               </q-item>
@@ -59,7 +59,7 @@
                     :color="block ? 'green' : ''"
                     :text-color="block ? 'grey-1' : 'grey-10'"
                     :label="block ? 'ON' : 'OFF'"
-                    @click="block = !block"
+                    @click="fnSendCommand('block')"
                   ></q-btn>
                 </q-item-section>
               </q-item>
@@ -82,6 +82,8 @@
               </q-item>
             </q-list>
           </q-card-section>
+
+          <!-- select nic -->
           <q-card-section>
             <div class="q-mx-md">
               <q-select
@@ -90,6 +92,7 @@
                 borderless
                 label="Network Interface"
                 :options="nics"
+                @update:model-value="fnUpdateNetworkInterface"
               >
                 <template v-slot:selected-item="scope">
                   <q-item>
@@ -146,14 +149,40 @@ export default defineComponent({
       window.powerOff.request()
     }
 
+    function fnSendCommand(key) {
+      switch (key) {
+        case 'signal':
+          signal.value = !signal.value
+          window.Fn.set({ key: 'signal', value: signal.value })
+          break
+        case 'block':
+          block.value = !block.value
+          window.Fn.set({ key: 'block', value: block.value })
+          break
+      }
+    }
+
+    function fnUpdateNetworkInterface() {
+      window.nic.set({ ...selected.value })
+    }
+
     onBeforeMount(() => {
+      console.log(window.nic)
       window.nic.onResponse((data) => {
         console.log(data)
         nics.value = data
       })
       window.nic.request()
     })
-    return { selected, signal, block, nics, fnPowerOff }
+    return {
+      selected,
+      signal,
+      block,
+      nics,
+      fnPowerOff,
+      fnSendCommand,
+      fnUpdateNetworkInterface,
+    }
   },
 })
 </script>

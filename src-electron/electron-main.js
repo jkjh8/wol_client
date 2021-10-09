@@ -1,12 +1,8 @@
-import {
-  app,
-  BrowserWindow,
-  nativeTheme,
-  Menu,
-  Tray,
-  ipcMain,
-  nativeImage,
-} from 'electron'
+import { app, BrowserWindow, nativeTheme } from 'electron'
+import { Menu, Tray, ipcMain, nativeImage } from 'electron'
+
+import * as shutdown from 'electron-shutdown-command'
+
 import path from 'path'
 import os from 'os'
 
@@ -25,9 +21,11 @@ let mainWindow
 let tray
 
 const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
+const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
+const img_close = nativeImage.createFromPath('src-electron/icons/close.png')
 
 function initTray() {
-  tray = new Tray('src-electron/icons/power-on.png')
+  tray = new Tray('src-electron/icons/close.png')
   const trayMenu = Menu.buildFromTemplate([
     {
       label: '열기',
@@ -41,6 +39,7 @@ function initTray() {
     {
       label: '숨기기',
       type: 'normal',
+      icon: img_hide.resize({ width: 16, height: 16 }),
       click: () => {
         console.log('click open')
         mainWindow.hide()
@@ -49,6 +48,7 @@ function initTray() {
     {
       label: '종료',
       type: 'normal',
+      icon: img_close.resize({ width: 16, height: 16 }),
       click: () => {
         console.log('click close')
         app.quit()
@@ -57,6 +57,14 @@ function initTray() {
   ])
   tray.setToolTip('Wol Client')
   tray.setContextMenu(trayMenu)
+
+  tray.on('click', function (e) {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide()
+    } else {
+      mainWindow.show()
+    }
+  })
 }
 
 function createWindow() {
@@ -120,8 +128,11 @@ function getNetworkAddress() {
   for (const [key, value] of Object.entries(nics)) {
     value.forEach((nic) => {
       if (!nic.internal && nic.family === 'IPv4') {
-        nic['name'] = key
-        rt.push(nic)
+        rt.push({
+          name: key,
+          address: nic.address,
+          mac: nic.mac,
+        })
       }
     })
   }
@@ -134,5 +145,16 @@ ipcMain.on('getNetworkAddress', (evt) => {
 })
 
 ipcMain.on('powerOff', (evt) => {
-  console.log('poweroff')
+  // only windows
+  shutdown.shutdown({
+    force: true,
+  })
+})
+
+ipcMain.on('setNetworkInterface', (evt, item) => {
+  console.log(item)
+})
+
+ipcMain.on('functionSet', (event, args) => {
+  console.log(args)
 })

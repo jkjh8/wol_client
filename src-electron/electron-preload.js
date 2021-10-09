@@ -16,15 +16,23 @@
  *   })
  */
 
-import { contextBridge, ipcRenderer } from 'electron'
+import { app, contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('nic', {
   request: () => {
     ipcRenderer.send('getNetworkAddress')
   },
   onResponse: (fn) => {
-    ipcRenderer.on('networkInterfaces', (event, ...data) => {
-      fn(...data)
+    ipcRenderer.on('networkInterfaces', (event, ...args) => {
+      fn(...args)
+    })
+  },
+  set: (item) => {
+    ipcRenderer.send('setNetworkInterface', item)
+  },
+  return: (fn) => {
+    ipcRenderer.on('rtNetworkInterface', (event, ...args) => {
+      fn(...args)
     })
   },
 })
@@ -32,5 +40,11 @@ contextBridge.exposeInMainWorld('nic', {
 contextBridge.exposeInMainWorld('powerOff', {
   request: () => {
     ipcRenderer.send('powerOff')
+  },
+})
+
+contextBridge.exposeInMainWorld('Fn', {
+  set: (args) => {
+    ipcRenderer.send('functionSet', args)
   },
 })
