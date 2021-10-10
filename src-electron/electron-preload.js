@@ -20,7 +20,7 @@ import { app, contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('nic', {
   request: () => {
-    ipcRenderer.send('getNetworkAddress')
+    ipcRenderer.send('getNetworkAddresses')
   },
   onResponse: (fn) => {
     ipcRenderer.on('networkInterfaces', (event, ...args) => {
@@ -35,6 +35,9 @@ contextBridge.exposeInMainWorld('nic', {
       fn(...args)
     })
   },
+  start: () => {
+    ipcRenderer.send('start')
+  },
 })
 
 contextBridge.exposeInMainWorld('powerOff', {
@@ -46,5 +49,13 @@ contextBridge.exposeInMainWorld('powerOff', {
 contextBridge.exposeInMainWorld('Fn', {
   set: (args) => {
     ipcRenderer.send('functionSet', args)
+  },
+  get: () => {
+    ipcRenderer.send('functionGet')
+  },
+  onResponse: (fn) => {
+    ipcRenderer.on('setup', (event, ...args) => {
+      fn(...args)
+    })
   },
 })

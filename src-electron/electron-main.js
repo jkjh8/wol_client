@@ -2,9 +2,10 @@ import { app, BrowserWindow, nativeTheme } from 'electron'
 import { Menu, Tray, ipcMain, nativeImage } from 'electron'
 
 import * as shutdown from 'electron-shutdown-command'
-
 import path from 'path'
 import os from 'os'
+import dgram from 'dgram'
+import db from './db'
 
 try {
   if (
@@ -19,6 +20,8 @@ try {
 
 let mainWindow
 let tray
+let interval
+let powerOffPermissions
 
 const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
 const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
@@ -139,9 +142,8 @@ function getNetworkAddress() {
   return rt
 }
 
-ipcMain.on('getNetworkAddress', (evt) => {
-  const nics = getNetworkAddress()
-  mainWindow.webContents.send('networkInterfaces', nics)
+ipcMain.on('getNetworkAddresses', async (evt) => {
+  return mainWindow.webContents.send('networkInterfaces', getNetworkAddress())
 })
 
 ipcMain.on('powerOff', (evt) => {
@@ -151,10 +153,92 @@ ipcMain.on('powerOff', (evt) => {
   })
 })
 
-ipcMain.on('setNetworkInterface', (evt, item) => {
-  console.log(item)
+ipcMain.on('setNetworkInterface', async (evt, item) => {
+  const hostname = os.hostname()
+  const r = await db.setup.update(
+    { section: 'networkInterface' },
+    {
+      $set: {
+        ...item,
+        hostname: hostname,
+      },
+    },
+    { upsert: true }
+  )
+  console.log(r)
 })
 
-ipcMain.on('functionSet', (event, args) => {
-  console.log(args)
+ipcMain.on('functionSet', async (event, args) => {
+  switch (args.key) {
+    case 'signal':
+      if (args.value) {
+        interval = setInterval(sendNetworkInterfaceInfo, 5000)
+      } else {
+        clearInterval(interval)
+      }
+      break
+    case 'block':
+      powerOffPermissions = args.value
+  }
+  await db.setup.update(
+    { section: args.key },
+    { $set: { value: args.value } },
+    { upsert: true }
+  )
 })
+
+ipcMain.on('functionGet', async (event, args) => {
+  const r = await db.setup.find()
+  mainWindow.webContents.send('setup', r)
+})
+
+const server = dgram.createSocket('udp4')
+const client = dgram.createSocket('udp4')
+const MCAST_ADDR = '230.185.192.109'
+const server_port = 12340
+const client_port = 12341
+
+server.bind(41848, function () {
+  server.setBroadcast(true)
+  server.setMulticastTTL(128)
+  server.addMembership(MCAST_ADDR)
+})
+
+async function sendNetworkInterfaceInfo() {
+  const info = await db.setup.findOne({ section: 'networkInterface' })
+  info['block'] = powerOffPermissions
+  const message = JSON.stringify(info)
+  server.send(message, server_port, MCAST_ADDR)
+}
+
+client.on('listening', function () {
+  const address = client.address()
+  console.log('udp listening on: ' + address.address + ':' + address.port)
+  client.setBroadcast(true)
+  client.setMulticastTTL(128)
+  client.addMembership(MCAST_ADDR)
+})
+
+client.on('message', async function (message, remote) {
+  try {
+    const command = JSON.parse(message)
+    switch (command.section) {
+      case 'sync':
+        mainWindow.webContents.send('setup', [{ section: 'sync' }])
+        break
+      case 'power':
+        const r = await db.setup.findOne({ section: 'networkInterface' })
+        if (powerOffPermissions) {
+          command.args.forEach((mac) => {
+            if (mac === r.mac) {
+              shutdown.shutdown({ force: true })
+            }
+          })
+        }
+    }
+  } catch (error) {
+    console.error(error)
+  }
+})
+
+client.bind(client_port, '0.0.0.0')

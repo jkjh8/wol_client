@@ -12,6 +12,7 @@
 
         <div class="q-mr-sm">
           <q-icon
+            v-show="!sync"
             name="svguse:icons.svg#exclamation"
             size="md"
             color="red"
@@ -76,7 +77,7 @@
                   <q-btn
                     style="width: 4rem; height: 1rem; border-radius: 0.4rem"
                     icon="power"
-                    @click="fnPowerOff"
+                    @click="fnTimerPowerOffStart"
                   />
                 </q-item-section>
               </q-item>
@@ -132,6 +133,23 @@
       </div>
     </div>
   </q-page>
+
+  <q-dialog v-model="mdPowerOff">
+    <div class="fit shadow-0 progress">
+      <q-circular-progress
+        class="text-white"
+        show-value
+        :value="count"
+        indeterminate
+        size="150px"
+        color="grey-8"
+      />
+      <div class="btns">
+        <q-btn class="btn" @click="fnClearTimerPowerOff">취소</q-btn>
+        <q-btn class="btn" color="negative" @click="fnPowerOff">즉시끄기</q-btn>
+      </div>
+    </div>
+  </q-dialog>
 </template>
 
 <script>
@@ -141,12 +159,48 @@ export default defineComponent({
   name: 'PageIndex',
   setup() {
     const signal = ref(false)
+    const sync = ref(false)
     const block = ref(false)
     const nics = ref(null)
     const selected = ref(null)
+    const mdPowerOff = ref(false)
+    const counter = ref(null)
+    const count = ref(5)
+    const timeout = ref(10)
+
+    function fnSyncTimeout() {
+      setInterval(() => {
+        if (timeout.value <= 0) {
+          timeout.value = 10
+          sync.value = false
+        } else {
+          timeout.value = timeout.value - 1
+        }
+      }, 1000)
+    }
+
+    function fnTimerPowerOffStart() {
+      // window.powerOff.request()
+      mdPowerOff.value = true
+      counter.value = setInterval(timerPowerOff, 1000)
+    }
 
     function fnPowerOff() {
       window.powerOff.request()
+    }
+
+    function fnClearTimerPowerOff() {
+      clearInterval(counter.value)
+      mdPowerOff.value = false
+    }
+
+    function timerPowerOff() {
+      if (count.value !== 0) {
+        count.value = count.value - 1
+      } else {
+        clearInterval(counter.value)
+        fnPowerOff()
+      }
     }
 
     function fnSendCommand(key) {
@@ -167,19 +221,60 @@ export default defineComponent({
     }
 
     onBeforeMount(() => {
-      console.log(window.nic)
       window.nic.onResponse((data) => {
-        console.log(data)
         nics.value = data
       })
+      window.Fn.onResponse((data) => {
+        let hasNetworkInfo = false
+        data.forEach((item) => {
+          switch (item.section) {
+            case 'networkInterface':
+              selected.value = {
+                name: item.name,
+                address: item.address,
+                mac: item.mac,
+              }
+              hasNetworkInfo = true
+              break
+            case 'block':
+              block.value = item.value
+              window.Fn.set({ key: 'block', value: block.value })
+              break
+            case 'signal':
+              signal.value = item.value
+              window.Fn.set({ key: 'signal', value: signal.value })
+              break
+            case 'sync':
+              sync.value = true
+              timeout.value = 10
+              break
+          }
+          if (!hasNetworkInfo) {
+            const networkInterface = {
+              name: nics.value[0].name,
+              address: nics.value[0].address,
+              mac: nics.value[0].mac,
+            }
+            selected.value = networkInterface
+            fnUpdateNetworkInterface()
+          }
+        })
+      })
+      fnSyncTimeout()
+      window.Fn.get()
       window.nic.request()
     })
     return {
       selected,
       signal,
+      sync,
       block,
       nics,
+      count,
+      mdPowerOff,
       fnPowerOff,
+      fnTimerPowerOffStart,
+      fnClearTimerPowerOff,
       fnSendCommand,
       fnUpdateNetworkInterface,
     }
@@ -195,5 +290,28 @@ export default defineComponent({
 .caption {
   font-size: 0.8rem;
   font-weight: 400;
+}
+.progress {
+  position: absolute;
+  overflow: visible;
+  top: 50%;
+  left: 50%;
+  margin: -80px 0 0 -75px;
+}
+.btns {
+  position: relative;
+  overflow: visible;
+  top: 10%;
+  margin: 0 -65px;
+}
+.btn {
+  width: 100px;
+  height: 42px;
+  background: #fff;
+  margin: 0 20px;
+  font-weight: 700;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 0 1rem 1rem grey;
 }
 </style>
