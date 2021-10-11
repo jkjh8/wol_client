@@ -27,6 +27,10 @@
 		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
 	</symbol>
 
+	<symbol id="check-circle" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+	</symbol>
+
   <symbol id="ethernet" x="0px" y="0px" viewBox="0 0 503.607 503.607" style="enable-background:new 0 0 503.607 503.607;" xml:space="preserve">
 <g transform="translate(1 1)">
 	<polygon style="fill:#FFE100;" points="292.77,326.344 208.836,326.344 175.262,200.443 175.262,108.115 326.344,108.115 

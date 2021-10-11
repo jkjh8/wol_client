@@ -2,7 +2,7 @@
   "name": "wol_client",
   "version": "0.0.1",
   "description": "wolforamx",
-  "productName": "wolclient",
+  "productName": "Wol Client for AMX",
   "author": "jkjh8 <jkjh82@naver.com>",
   "private": true,
   "scripts": {

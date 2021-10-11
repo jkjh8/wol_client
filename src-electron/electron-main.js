@@ -22,6 +22,7 @@ let mainWindow
 let tray
 let interval
 let powerOffPermissions
+let trayMenu
 
 const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
 const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
@@ -29,7 +30,7 @@ const img_close = nativeImage.createFromPath('src-electron/icons/close.png')
 
 function initTray() {
   tray = new Tray('src-electron/icons/close.png')
-  const trayMenu = Menu.buildFromTemplate([
+  trayMenu = Menu.buildFromTemplate([
     {
       label: '열기',
       type: 'normal',
@@ -46,6 +47,15 @@ function initTray() {
       click: () => {
         console.log('click open')
         mainWindow.hide()
+      },
+    },
+    {
+      label: '트레이아이콘 시작',
+      type: 'checkbox',
+      checked: false,
+      click: () => {
+        console.log('click tray')
+        setStartTrayIcon()
       },
     },
     {
@@ -75,7 +85,7 @@ function createWindow() {
    * Initial window options
    */
   mainWindow = new BrowserWindow({
-    width: 1000,
+    width: 600,
     height: 600,
     useContentSize: true,
     webPreferences: {
@@ -87,6 +97,7 @@ function createWindow() {
   })
 
   mainWindow.loadURL(process.env.APP_URL)
+  getStartTrayIcon()
 
   if (process.env.DEBUGGING) {
     // if on DEV or Production with debug enabled
@@ -171,8 +182,12 @@ ipcMain.on('setNetworkInterface', async (evt, item) => {
 ipcMain.on('functionSet', async (event, args) => {
   switch (args.key) {
     case 'signal':
+      console.log(args.value)
       if (args.value) {
-        interval = setInterval(sendNetworkInterfaceInfo, 5000)
+        await sendNetworkInterfaceInfo()
+        interval = setInterval(async () => {
+          await sendNetworkInterfaceInfo()
+        }, 5000)
       } else {
         clearInterval(interval)
       }
@@ -227,9 +242,11 @@ client.on('message', async function (message, remote) {
         mainWindow.webContents.send('setup', [{ section: 'sync' }])
         break
       case 'power':
+        console.log(command)
         const r = await db.setup.findOne({ section: 'networkInterface' })
-        if (powerOffPermissions) {
+        if (!powerOffPermissions) {
           command.args.forEach((mac) => {
+            console.log(mac, r.mac)
             if (mac === r.mac) {
               shutdown.shutdown({ force: true })
             }
@@ -242,3 +259,20 @@ client.on('message', async function (message, remote) {
 })
 
 client.bind(client_port, '0.0.0.0')
+
+async function setStartTrayIcon() {
+  await db.setup.update(
+    { section: 'startTrayIcon' },
+    { $set: { value: trayMenu.items[2].checked } },
+    { upsert: true }
+  )
+  console.log(trayMenu.items[2].checked)
+}
+
+async function getStartTrayIcon() {
+  const r = await db.setup.findOne({ section: 'startTrayIcon' })
+  trayMenu.items[2].checked = r.value
+  if (r.value) {
+    mainWindow.hide()
+  }
+}

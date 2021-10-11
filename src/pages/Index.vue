@@ -12,11 +12,18 @@
 
         <div class="q-mr-sm">
           <q-icon
-            v-show="!sync"
+            v-if="!sync"
             name="svguse:icons.svg#exclamation"
             size="md"
             color="red"
-          ></q-icon>
+          >
+          </q-icon>
+          <q-icon
+            v-else
+            name="svguse:icons.svg#check-circle"
+            size="md"
+            color="green"
+          />
         </div>
       </div>
       <div class="q-mt-xl">
@@ -167,6 +174,7 @@ export default defineComponent({
     const counter = ref(null)
     const count = ref(5)
     const timeout = ref(10)
+    const hasNetworkInfo = ref(false)
 
     function fnSyncTimeout() {
       setInterval(() => {
@@ -225,7 +233,6 @@ export default defineComponent({
         nics.value = data
       })
       window.Fn.onResponse((data) => {
-        let hasNetworkInfo = false
         data.forEach((item) => {
           switch (item.section) {
             case 'networkInterface':
@@ -234,7 +241,7 @@ export default defineComponent({
                 address: item.address,
                 mac: item.mac,
               }
-              hasNetworkInfo = true
+              hasNetworkInfo.value = true
               break
             case 'block':
               block.value = item.value
@@ -249,7 +256,8 @@ export default defineComponent({
               timeout.value = 10
               break
           }
-          if (!hasNetworkInfo) {
+          if (!hasNetworkInfo.value) {
+            console.log('not has ')
             const networkInterface = {
               name: nics.value[0].name,
               address: nics.value[0].address,
