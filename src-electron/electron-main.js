@@ -23,10 +23,21 @@ let tray
 let interval
 let powerOffPermissions
 let trayMenu
+let trayVal
 
 const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
 const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
 const img_close = nativeImage.createFromPath('src-electron/icons/close.png')
+
+async function getStartTrayIcon() {
+  const r = await db.setup.findOne({ section: 'startTrayIcon' })
+  // trayMenu.items[2].checked = r.value
+  trayVal = r.value
+}
+
+function trayIconValue() {
+  tray.Menu.items[2].checked = trayVal
+}
 
 function initTray() {
   tray = new Tray('src-electron/icons/close.png')
@@ -80,14 +91,54 @@ function initTray() {
   })
 }
 
-function createWindow() {
+const mainMenu = Menu.buildFromTemplate([
+  {
+    label: 'File',
+    submenu: [
+      {
+        label: '열기',
+        type: 'normal',
+        icon: img_show.resize({ width: 16, height: 16 }),
+        click: () => {
+          console.log('click open')
+          mainWindow.show()
+        },
+      },
+      { role: 'hide' },
+      {
+        label: '트레이아이콘 시작',
+        type: 'checkbox',
+        checked: false,
+        click: () => {
+          console.log('click tray')
+          setStartTrayIcon()
+        },
+      },
+      {
+        label: '종료',
+        type: 'normal',
+        icon: img_close.resize({ width: 16, height: 16 }),
+        click: () => {
+          console.log('click close')
+          app.quit()
+        },
+      },
+    ],
+  },
+])
+
+async function createWindow() {
   /**
    * Initial window options
    */
+  // load tray icon value
+  await getStartTrayIcon()
+  initTray()
   mainWindow = new BrowserWindow({
     width: 600,
     height: 600,
     useContentSize: true,
+    show: !trayVal,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: true,
@@ -97,7 +148,6 @@ function createWindow() {
   })
 
   mainWindow.loadURL(process.env.APP_URL)
-  getStartTrayIcon()
 
   if (process.env.DEBUGGING) {
     // if on DEV or Production with debug enabled
@@ -108,7 +158,6 @@ function createWindow() {
       mainWindow.webContents.closeDevTools()
     })
   }
-  initTray()
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -120,6 +169,11 @@ function createWindow() {
       e.preventDefault()
     }
   })
+
+  Menu.setApplicationMenu(mainMenu)
+
+  // refresh trayicon start value
+  trayMenu.items[2].checked = trayVal
 }
 
 app.on('ready', createWindow)
@@ -267,12 +321,4 @@ async function setStartTrayIcon() {
     { upsert: true }
   )
   console.log(trayMenu.items[2].checked)
-}
-
-async function getStartTrayIcon() {
-  const r = await db.setup.findOne({ section: 'startTrayIcon' })
-  trayMenu.items[2].checked = r.value
-  if (r.value) {
-    mainWindow.hide()
-  }
 }
