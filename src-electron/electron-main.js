@@ -7,6 +7,8 @@ import os from 'os'
 import dgram from 'dgram'
 import db from './db'
 
+const isMac = os.platform === 'darwin'
+
 try {
   if (
     process.platform === 'win32' &&
@@ -35,17 +37,32 @@ async function getStartTrayIcon() {
   trayVal = r.value
 }
 
-function trayIconValue() {
-  tray.Menu.items[2].checked = trayVal
-}
-
 function initTray() {
-  tray = new Tray('src-electron/icons/close.png')
+  tray = new Tray(img_close.resize({ width: 16, height: 16 }))
   trayMenu = Menu.buildFromTemplate([
+    ...(isMac
+      ? [
+          {
+            label: 'app.name',
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              { role: 'services' },
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { role: 'unhide' },
+              { type: 'separator' },
+              { role: 'quit' },
+            ],
+          },
+        ]
+      : []),
     {
       label: '열기',
       type: 'normal',
       icon: img_show.resize({ width: 16, height: 16 }),
+      accelerator: 'CommandOrControl+O',
       click: () => {
         console.log('click open')
         mainWindow.show()
@@ -60,6 +77,7 @@ function initTray() {
         mainWindow.hide()
       },
     },
+    { type: 'separator' },
     {
       label: '트레이아이콘 시작',
       type: 'checkbox',
@@ -69,6 +87,7 @@ function initTray() {
         setStartTrayIcon()
       },
     },
+    { type: 'separator' },
     {
       label: '종료',
       type: 'normal',
@@ -104,7 +123,16 @@ const mainMenu = Menu.buildFromTemplate([
           mainWindow.show()
         },
       },
-      { role: 'hide' },
+      {
+        label: '숨기기',
+        type: 'normal',
+        icon: img_hide.resize({ width: 16, height: 16 }),
+        click: () => {
+          console.log('click hide')
+          mainWindow.hide()
+        },
+      },
+      { type: 'separator' },
       {
         label: '트레이아이콘 시작',
         type: 'checkbox',
@@ -114,6 +142,7 @@ const mainMenu = Menu.buildFromTemplate([
           setStartTrayIcon()
         },
       },
+      { type: 'separator' },
       {
         label: '종료',
         type: 'normal',
