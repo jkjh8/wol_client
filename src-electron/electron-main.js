@@ -64,7 +64,6 @@ function initTray() {
       icon: img_show.resize({ width: 16, height: 16 }),
       accelerator: 'CommandOrControl+O',
       click: () => {
-        console.log('click open')
         mainWindow.show()
       },
     },
@@ -72,8 +71,8 @@ function initTray() {
       label: '숨기기',
       type: 'normal',
       icon: img_hide.resize({ width: 16, height: 16 }),
+      accelerator: 'CommandOrControl+H',
       click: () => {
-        console.log('click open')
         mainWindow.hide()
       },
     },
@@ -82,8 +81,8 @@ function initTray() {
       label: '트레이아이콘 시작',
       type: 'checkbox',
       checked: false,
+      accelerator: 'CommandOrControl+T',
       click: () => {
-        console.log('click tray')
         setStartTrayIcon()
       },
     },
@@ -92,9 +91,9 @@ function initTray() {
       label: '종료',
       type: 'normal',
       icon: img_close.resize({ width: 16, height: 16 }),
+      accelerator: 'alt+F4',
       click: () => {
-        console.log('click close')
-        app.quit()
+        app.exit(0)
       },
     },
   ])
@@ -118,8 +117,8 @@ const mainMenu = Menu.buildFromTemplate([
         label: '열기',
         type: 'normal',
         icon: img_show.resize({ width: 16, height: 16 }),
+        accelerator: 'CommandOrControl+O',
         click: () => {
-          console.log('click open')
           mainWindow.show()
         },
       },
@@ -127,6 +126,7 @@ const mainMenu = Menu.buildFromTemplate([
         label: '숨기기',
         type: 'normal',
         icon: img_hide.resize({ width: 16, height: 16 }),
+        accelerator: 'CommandOrControl+H',
         click: () => {
           console.log('click hide')
           mainWindow.hide()
@@ -137,6 +137,7 @@ const mainMenu = Menu.buildFromTemplate([
         label: '트레이아이콘 시작',
         type: 'checkbox',
         checked: false,
+        accelerator: 'CommandOrControl+T',
         click: () => {
           console.log('click tray')
           setStartTrayIcon()
@@ -147,9 +148,9 @@ const mainMenu = Menu.buildFromTemplate([
         label: '종료',
         type: 'normal',
         icon: img_close.resize({ width: 16, height: 16 }),
+        accelerator: 'alt+F4',
         click: () => {
-          console.log('click close')
-          app.quit()
+          app.exit(0)
         },
       },
     ],
