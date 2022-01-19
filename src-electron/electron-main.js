@@ -6,6 +6,7 @@ import path from 'path'
 import os from 'os'
 import dgram from 'dgram'
 import db from './db'
+import { start } from 'repl'
 
 const isMac = os.platform === 'darwin'
 
@@ -25,7 +26,11 @@ let tray
 let interval
 let powerOffPermissions
 let trayMenu
-let trayVal
+let trayVal = false
+let bootOnStartVal = false
+let startTrayTraymenu
+let startTrayMenu
+let startOnBootMenu
 
 const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
 const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
@@ -34,7 +39,14 @@ const img_close = nativeImage.createFromPath('src-electron/icons/close.png')
 async function getStartTrayIcon() {
   const r = await db.setup.findOne({ section: 'startTrayIcon' })
   // trayMenu.items[2].checked = r.value
-  trayVal = r.value
+  if (r && r.value) {
+    trayVal = r.value
+  }
+  const rt = await db.setup.findOne({ section: 'startOnBoot' })
+  if (rt && rt.value) {
+    bootOnStartVal = rt.value
+  }
+  console.log(trayVal, bootOnStartVal)
 }
 
 function initTray() {
@@ -79,6 +91,7 @@ function initTray() {
     { type: 'separator' },
     {
       label: '트레이아이콘 시작',
+      id: 'traystart',
       type: 'checkbox',
       checked: false,
       accelerator: 'CommandOrControl+T',
@@ -135,12 +148,23 @@ const mainMenu = Menu.buildFromTemplate([
       { type: 'separator' },
       {
         label: '트레이아이콘 시작',
+        id: 'traystart',
         type: 'checkbox',
-        checked: false,
+        checked: trayVal,
         accelerator: 'CommandOrControl+T',
         click: () => {
           console.log('click tray')
           setStartTrayIcon()
+        },
+      },
+      {
+        label: '부팅시 시작',
+        id: 'startonboot',
+        type: 'checkbox',
+        checked: bootOnStartVal,
+        click: () => {
+          console.log('click auto start')
+          setStartOnBoot()
         },
       },
       { type: 'separator' },
@@ -166,7 +190,7 @@ async function createWindow() {
   initTray()
   mainWindow = new BrowserWindow({
     width: 600,
-    height: 600,
+    height: 500,
     useContentSize: true,
     show: !trayVal,
     webPreferences: {
@@ -203,7 +227,13 @@ async function createWindow() {
   Menu.setApplicationMenu(mainMenu)
 
   // refresh trayicon start value
-  trayMenu.items[2].checked = trayVal
+  console.log('tray menu', trayMenu.items[2].checked)
+  startTrayMenu = mainMenu.getMenuItemById('traystart')
+  startOnBootMenu = mainMenu.getMenuItemById('startonboot')
+  startTrayTraymenu = trayMenu.getMenuItemById('traystart')
+  startTrayMenu.checked = trayVal
+  startTrayTraymenu.checked = trayVal
+  startOnBootMenu.checked = bootOnStartVal
 }
 
 app.on('ready', createWindow)
@@ -345,10 +375,30 @@ client.on('message', async function (message, remote) {
 client.bind(client_port, '0.0.0.0')
 
 async function setStartTrayIcon() {
+  trayVal = !trayVal
   await db.setup.update(
     { section: 'startTrayIcon' },
-    { $set: { value: trayMenu.items[2].checked } },
+    { $set: { value: trayVal } },
     { upsert: true }
   )
-  console.log(trayMenu.items[2].checked)
+  startTrayMenu.checked = trayVal
+  startTrayTraymenu.checked = trayVal
+  startOnBootMenu.checked = bootOnStartVal
+}
+
+async function setStartOnBoot() {
+  bootOnStartVal = !bootOnStartVal
+  await db.setup.update(
+    { section: 'startOnBoot' },
+    { $set: { value: bootOnStartVal } },
+    { upsert: true }
+  )
+  startTrayMenu.checked = trayVal
+  startTrayTraymenu.checked = trayVal
+  startOnBootMenu.checked = bootOnStartVal
+
+  app.setLoginItemSettings({
+    openAtLogin: bootOnStartVal,
+    path: app.getPath('exe'),
+  })
 }

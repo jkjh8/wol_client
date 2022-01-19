@@ -165,7 +165,7 @@ import { defineComponent, ref, onBeforeMount } from 'vue'
 export default defineComponent({
   name: 'PageIndex',
   setup() {
-    const signal = ref(false)
+    const signal = ref(true)
     const sync = ref(false)
     const block = ref(false)
     const nics = ref(null)
