@@ -10,8 +10,11 @@ const img_close = nativeImage.createFromPath(
   'src-electron/icons/close.png'
 )
 
+let mainMenu
+let trayMenu
+
 function createMainMenu() {
-  const mainMenu = Menu.buildFromTemplate([
+  mainMenu = Menu.buildFromTemplate([
     {
       label: 'File',
       submenu: [
@@ -64,6 +67,7 @@ function createMainMenu() {
       ]
     }
   ])
+  return mainMenu
 }
 
 export { createMainMenu }
