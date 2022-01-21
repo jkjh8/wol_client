@@ -18,44 +18,13 @@
 
 import { app, contextBridge, ipcRenderer } from 'electron'
 
-contextBridge.exposeInMainWorld('nic', {
-  request: () => {
-    ipcRenderer.send('getNetworkAddresses')
+contextBridge.exposeInMainWorld('FN', {
+  onRequest: (args) => {
+    ipcRenderer.send('onRequest', args)
   },
   onResponse: (fn) => {
-    ipcRenderer.on('networkInterfaces', (event, ...args) => {
+    ipcRenderer.on('onResponse', (event, ...args) => {
       fn(...args)
     })
-  },
-  set: (item) => {
-    ipcRenderer.send('setNetworkInterface', item)
-  },
-  return: (fn) => {
-    ipcRenderer.on('rtNetworkInterface', (event, ...args) => {
-      fn(...args)
-    })
-  },
-  start: () => {
-    ipcRenderer.send('start')
-  },
-})
-
-contextBridge.exposeInMainWorld('powerOff', {
-  request: () => {
-    ipcRenderer.send('powerOff')
-  },
-})
-
-contextBridge.exposeInMainWorld('Fn', {
-  set: (args) => {
-    ipcRenderer.send('functionSet', args)
-  },
-  get: () => {
-    ipcRenderer.send('functionGet')
-  },
-  onResponse: (fn) => {
-    ipcRenderer.on('setup', (event, ...args) => {
-      fn(...args)
-    })
-  },
+  }
 })

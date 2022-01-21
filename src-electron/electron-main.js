@@ -6,7 +6,8 @@ import path from 'path'
 import os from 'os'
 import dgram from 'dgram'
 import db from './db'
-import { start } from 'repl'
+
+import { getNics, getNicsAndSend } from './nics'
 
 const isMac = os.platform === 'darwin'
 
@@ -16,7 +17,10 @@ try {
     nativeTheme.shouldUseDarkColors === true
   ) {
     require('fs').unlinkSync(
-      require('path').join(app.getPath('userData'), 'DevTools Extensions')
+      require('path').join(
+        app.getPath('userData'),
+        'DevTools Extensions'
+      )
     )
   }
 } catch (_) {}
@@ -32,9 +36,17 @@ let startTrayTraymenu
 let startTrayMenu
 let startOnBootMenu
 
-const img_show = nativeImage.createFromPath('src-electron/icons/max.png')
-const img_hide = nativeImage.createFromPath('src-electron/icons/min.png')
-const img_close = nativeImage.createFromPath('src-electron/icons/close.png')
+let syncTimer = null
+
+const img_show = nativeImage.createFromPath(
+  'src-electron/icons/max.png'
+)
+const img_hide = nativeImage.createFromPath(
+  'src-electron/icons/min.png'
+)
+const img_close = nativeImage.createFromPath(
+  'src-electron/icons/close.png'
+)
 
 async function getStartTrayIcon() {
   const r = await db.setup.findOne({ section: 'startTrayIcon' })
@@ -65,9 +77,9 @@ function initTray() {
               { role: 'hideOthers' },
               { role: 'unhide' },
               { type: 'separator' },
-              { role: 'quit' },
-            ],
-          },
+              { role: 'quit' }
+            ]
+          }
         ]
       : []),
     {
@@ -77,7 +89,7 @@ function initTray() {
       accelerator: 'CommandOrControl+O',
       click: () => {
         mainWindow.show()
-      },
+      }
     },
     {
       label: '숨기기',
@@ -86,7 +98,7 @@ function initTray() {
       accelerator: 'CommandOrControl+H',
       click: () => {
         mainWindow.hide()
-      },
+      }
     },
     { type: 'separator' },
     {
@@ -97,7 +109,7 @@ function initTray() {
       accelerator: 'CommandOrControl+T',
       click: () => {
         setStartTrayIcon()
-      },
+      }
     },
     { type: 'separator' },
     {
@@ -107,8 +119,8 @@ function initTray() {
       accelerator: 'alt+F4',
       click: () => {
         app.exit(0)
-      },
-    },
+      }
+    }
   ])
   tray.setToolTip('Wol Client')
   tray.setContextMenu(trayMenu)
@@ -133,7 +145,7 @@ const mainMenu = Menu.buildFromTemplate([
         accelerator: 'CommandOrControl+O',
         click: () => {
           mainWindow.show()
-        },
+        }
       },
       {
         label: '숨기기',
@@ -143,7 +155,7 @@ const mainMenu = Menu.buildFromTemplate([
         click: () => {
           console.log('click hide')
           mainWindow.hide()
-        },
+        }
       },
       { type: 'separator' },
       {
@@ -155,7 +167,7 @@ const mainMenu = Menu.buildFromTemplate([
         click: () => {
           console.log('click tray')
           setStartTrayIcon()
-        },
+        }
       },
       {
         label: '부팅시 시작',
@@ -165,7 +177,7 @@ const mainMenu = Menu.buildFromTemplate([
         click: () => {
           console.log('click auto start')
           setStartOnBoot()
-        },
+        }
       },
       { type: 'separator' },
       {
@@ -175,10 +187,10 @@ const mainMenu = Menu.buildFromTemplate([
         accelerator: 'alt+F4',
         click: () => {
           app.exit(0)
-        },
-      },
-    ],
-  },
+        }
+      }
+    ]
+  }
 ])
 
 async function createWindow() {
@@ -189,7 +201,7 @@ async function createWindow() {
   await getStartTrayIcon()
   initTray()
   mainWindow = new BrowserWindow({
-    width: 600,
+    width: 1200,
     height: 500,
     useContentSize: true,
     show: !trayVal,
@@ -197,8 +209,11 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: true,
       // More info: /quasar-cli/developing-electron-apps/electron-preload-script
-      preload: path.resolve(__dirname, process.env.QUASAR_ELECTRON_PRELOAD),
-    },
+      preload: path.resolve(
+        __dirname,
+        process.env.QUASAR_ELECTRON_PRELOAD
+      )
+    }
   })
 
   mainWindow.loadURL(process.env.APP_URL)
@@ -236,7 +251,9 @@ async function createWindow() {
   startOnBootMenu.checked = bootOnStartVal
 }
 
-app.on('ready', createWindow)
+app.on('ready', () => {
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -250,99 +267,102 @@ app.on('activate', () => {
   }
 })
 
-function getNetworkAddress() {
-  const rt = []
-  const nics = os.networkInterfaces()
-  for (const [key, value] of Object.entries(nics)) {
-    value.forEach((nic) => {
-      if (!nic.internal && nic.family === 'IPv4') {
-        rt.push({
-          name: key,
-          address: nic.address,
-          mac: nic.mac,
+ipcMain.on('onRequest', (e, args) => {
+  try {
+    switch (args.command) {
+      case 'getnics':
+        const rt = getNics()
+        console.log(rt)
+        mainWindow.webContents.send('onResponse', {
+          command: 'nics',
+          value: rt
         })
-      }
-    })
+        break
+    }
+  } catch (e) {
+    console.error(e)
   }
-  return rt
-}
-
-ipcMain.on('getNetworkAddresses', async (evt) => {
-  return mainWindow.webContents.send('networkInterfaces', getNetworkAddress())
 })
 
-ipcMain.on('powerOff', (evt) => {
-  // only windows
-  shutdown.shutdown({
-    force: true,
-  })
-})
+// ipcMain.on('getNetworkAddresses', async (evt) => {
+//   return mainWindow.webContents.send(
+//     'networkInterfaces',
+//     getNetworkAddress()
+//   )
+// })
 
-ipcMain.on('setNetworkInterface', async (evt, item) => {
-  const hostname = os.hostname()
-  const r = await db.setup.update(
-    { section: 'networkInterface' },
-    {
-      $set: {
-        ...item,
-        hostname: hostname,
-      },
-    },
-    { upsert: true }
-  )
-  console.log(r)
-})
+// ipcMain.on('powerOff', (evt) => {
+//   // only windows
+//   shutdown.shutdown({
+//     force: true
+//   })
+// })
 
-ipcMain.on('functionSet', async (event, args) => {
-  switch (args.key) {
-    case 'signal':
-      console.log(args.value)
-      if (args.value) {
-        await sendNetworkInterfaceInfo()
-        interval = setInterval(async () => {
-          await sendNetworkInterfaceInfo()
-        }, 5000)
-      } else {
-        clearInterval(interval)
-      }
-      break
-    case 'block':
-      powerOffPermissions = args.value
-  }
-  await db.setup.update(
-    { section: args.key },
-    { $set: { value: args.value } },
-    { upsert: true }
-  )
-})
+// ipcMain.on('setNetworkInterface', async (evt, item) => {
+//   const hostname = os.hostname()
+//   const r = await db.setup.update(
+//     { section: 'networkInterface' },
+//     {
+//       $set: {
+//         ...item,
+//         hostname: hostname
+//       }
+//     },
+//     { upsert: true }
+//   )
+//   console.log(r)
+// })
 
-ipcMain.on('functionGet', async (event, args) => {
-  const r = await db.setup.find()
-  mainWindow.webContents.send('setup', r)
-})
+// ipcMain.on('functionSet', async (event, args) => {
+//   switch (args.key) {
+//     case 'signal':
+//       if (args.value) {
+//         await sendNetworkInterfaceInfo()
+//         syncTimer = setInterval(async () => {
+//           await sendNetworkInterfaceInfo()
+//         }, 5000)
+//       } else {
+//         clearInterval(syncTimer)
+//       }
+//       break
+//     case 'block':
+//       powerOffPermissions = args.value
+//   }
+//   await db.setup.update(
+//     { section: args.key },
+//     { $set: { value: args.value } },
+//     { upsert: true }
+//   )
+// })
 
-const server = dgram.createSocket('udp4')
+// ipcMain.on('functionGet', async (event, args) => {
+//   const r = await db.setup.find()
+//   mainWindow.webContents.send('setup', r)
+// })
+
 const client = dgram.createSocket('udp4')
 const MCAST_ADDR = '230.185.192.109'
-const server_port = 12340
-const client_port = 12341
-
-server.bind(41848, function () {
-  server.setBroadcast(true)
-  server.setMulticastTTL(128)
-  server.addMembership(MCAST_ADDR)
-})
+const server_port = 56434
+const client_port = 52319
 
 async function sendNetworkInterfaceInfo() {
-  const info = await db.setup.findOne({ section: 'networkInterface' })
-  info['block'] = powerOffPermissions
-  const message = JSON.stringify(info)
-  server.send(message, server_port, MCAST_ADDR)
+  try {
+    const info = await db.setup.findOne({
+      section: 'networkInterface'
+    })
+    info['block'] = powerOffPermissions
+    const message = JSON.stringify(info)
+    client.send(message, server_port, MCAST_ADDR)
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 client.on('listening', function () {
   const address = client.address()
-  console.log('udp listening on: ' + address.address + ':' + address.port)
+  console.log(
+    'udp listening on: ' + address.address + ':' + address.port
+  )
   client.setBroadcast(true)
   client.setMulticastTTL(128)
   client.addMembership(MCAST_ADDR)
@@ -357,7 +377,9 @@ client.on('message', async function (message, remote) {
         break
       case 'power':
         console.log(command)
-        const r = await db.setup.findOne({ section: 'networkInterface' })
+        const r = await db.setup.findOne({
+          section: 'networkInterface'
+        })
         if (!powerOffPermissions) {
           command.args.forEach((mac) => {
             console.log(mac, r.mac)
@@ -399,6 +421,6 @@ async function setStartOnBoot() {
 
   app.setLoginItemSettings({
     openAtLogin: bootOnStartVal,
-    path: app.getPath('exe'),
+    path: app.getPath('exe')
   })
 }

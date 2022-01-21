@@ -12,10 +12,14 @@ import { createStore } from 'vuex'
  * with the Store instance.
  */
 
+import setup from './setup'
+import nic from './nic'
+
 export default store(function (/* { ssrContext } */) {
   const Store = createStore({
     modules: {
-      // example
+      setup,
+      nic
     },
 
     // enable strict mode (adds overhead!)
