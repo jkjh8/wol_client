@@ -24,11 +24,8 @@ function getNics() {
 
 function getNicsAndSend() {
   try {
-    const window = BrowserWindow.fromId(1)
-    console.log(window)
     const nics = getNics()
-    console.log(nics)
-    window.webContents.send('onResponse', {
+    BrowserWindow.fromId(1).webContents.send('onResponse', {
       command: 'nics',
       value: nics
     })

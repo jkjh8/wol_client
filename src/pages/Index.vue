@@ -75,97 +75,48 @@ export default defineComponent({
   name: 'PageIndex',
   components: { FunctionList, SelectNic },
   setup() {
-    const { state, commit } = useStore()
-    const signal = ref(true)
-    const sync = ref(false)
-    const block = ref(false)
-    const nics = ref(null)
-    const selected = ref(null)
-    const mdPowerOff = ref(false)
-    const counter = ref(null)
-    const count = ref(5)
-    const timeout = ref(10)
-    const hasNetworkInfo = ref(false)
+    const { commit } = useStore()
 
-    function fnSyncTimeout() {
-      setInterval(() => {
-        if (timeout.value <= 0) {
-          timeout.value = 10
-          sync.value = false
-        } else {
-          timeout.value = timeout.value - 1
-        }
-      }, 1000)
-    }
+    const setupParcing = (setup) => {
+      try {
+        setup.forEach((item) => {
+          switch (item.section) {
+            case 'block':
+              commit('setup/updateBlock', item.value)
+              break
 
-    function fnTimerPowerOffStart() {
-      // window.powerOff.request()
-      mdPowerOff.value = true
-      counter.value = setInterval(timerPowerOff, 1000)
-    }
-
-    function fnPowerOff() {
-      window.powerOff.request()
-    }
-
-    function fnClearTimerPowerOff() {
-      clearInterval(counter.value)
-      mdPowerOff.value = false
-    }
-
-    function timerPowerOff() {
-      if (count.value !== 0) {
-        count.value = count.value - 1
-      } else {
-        clearInterval(counter.value)
-        fnPowerOff()
+            case 'signal':
+              commit('setup/updateSignal', item.value)
+              break
+          }
+        })
+      } catch (e) {
+        console.error(e)
       }
-    }
-
-    function fnSendCommand(key) {
-      switch (key) {
-        case 'signal':
-          signal.value = !signal.value
-          window.Fn.set({ key: 'signal', value: signal.value })
-          break
-        case 'block':
-          block.value = !block.value
-          window.Fn.set({ key: 'block', value: block.value })
-          break
-      }
-    }
-
-    function fnUpdateNetworkInterface() {
-      window.nic.set({ ...selected.value })
-    }
-
-    function checkNic() {
-      return new Promise()
-      nics.value.forEach((nic) => {
-        if (
-          nic.ipaddress === selected.value.ipaddress &&
-          nic.mac === selected.value.mac
-        ) {
-          return true
-        }
-        return false
-      })
     }
 
     onBeforeMount(() => {
       window.FN.onResponse((args) => {
-        console.log(args)
         try {
           switch (args.command) {
             case 'nics':
               console.log(args)
               commit('nic/updateNics', args.value)
               break
+
+            case 'setup':
+              setupParcing(args.value)
+              break
+
+            default:
+              console.log(args)
+              break
           }
         } catch (e) {
           console.error(e)
         }
       })
+      window.FN.onRequest({ command: 'getsetup' })
       // window.Fn.onResponse((data) => {
       //   data.forEach((item) => {
       //     switch (item.section) {
@@ -203,23 +154,9 @@ export default defineComponent({
       //     }
       //   })
       // })
-      // fnSyncTimeout()
-      // window.Fn.get()
-      // window.nic.request()
     })
     return {
-      selected,
-      signal,
-      sync,
-      block,
-      nics,
-      count,
-      mdPowerOff,
-      fnPowerOff,
-      fnTimerPowerOffStart,
-      fnClearTimerPowerOff,
-      fnSendCommand,
-      fnUpdateNetworkInterface
+      //
     }
   }
 })

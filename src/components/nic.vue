@@ -63,8 +63,8 @@ export default {
 
     const fnSelect = () => {
       window.FN.onRequest({
-        command: 'selectNic',
-        value: selected.value
+        command: 'selectnic',
+        value: JSON.stringify(selected.value)
       })
     }
 

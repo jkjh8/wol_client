@@ -6,7 +6,9 @@
       </q-item-section>
       <q-item-section>
         <q-item-label>Signal</q-item-label>
-        <q-item-label caption>컴퓨터 디바이스 정보를 서버로 전송</q-item-label>
+        <q-item-label caption
+          >컴퓨터 디바이스 정보를 서버로 전송</q-item-label
+        >
       </q-item-section>
       <q-item-section side>
         <q-btn
@@ -87,7 +89,7 @@ export default {
         title: 'Power Off',
         message: '현재 시스템을 종료합니다.',
         cancel: true,
-        persistent: true,
+        persistent: true
       }).onOk(() => {
         window.FN.onRequest({ command: 'poweroff' })
       })
@@ -98,8 +100,8 @@ export default {
       block,
       fnBlock,
       fnSignal,
-      fnPowerOff,
+      fnPowerOff
     }
-  },
+  }
 }
 </script>
