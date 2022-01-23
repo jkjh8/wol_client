@@ -1,5 +1,8 @@
 import { app, Menu, Tray, nativeImage, BrowserWindow } from 'electron'
+
 import db from '../db'
+import { getNicsAndSend } from '../nics'
+import { getSetup } from '../functions'
 
 const img_show = nativeImage.createFromPath(
   'src-electron/icons/max.png'
@@ -9,6 +12,14 @@ const img_hide = nativeImage.createFromPath(
 )
 const img_close = nativeImage.createFromPath(
   'src-electron/icons/close.png'
+)
+
+const img_reset = nativeImage.createFromPath(
+  'src-electron/icons/reset.png'
+)
+
+const img_info = nativeImage.createFromPath(
+  'src-electron/icons/info.png'
 )
 
 let mainMenu
@@ -72,6 +83,59 @@ function createMainMenu(trayicon, bootonstart) {
           accelerator: 'alt+F4',
           click: () => {
             app.exit(0)
+          }
+        }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        {
+          label: 'Reload',
+          type: 'normal',
+          icon: img_reset.resize({ width: 16, height: 16 }),
+          accelerator: 'CommandOrControl+R',
+          click: async () => {
+            getNicsAndSend()
+            getSetup()
+          }
+        },
+        {
+          label: 'Reset NIC',
+          type: 'normal',
+          click: async () => {
+            getNicsAndSend()
+            await db.setup.update(
+              { section: 'network' },
+              { $set: { value: null } }
+            )
+            getSetup()
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Factory Reset',
+          type: 'normal',
+          click: () => {
+            BrowserWindow.fromId(1).webContents.send('onResponse', {
+              command: 'factory_reset'
+            })
+          }
+        }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Info',
+          type: 'normal',
+          icon: img_info.resize({ width: 16, height: 16 }),
+          accelerator: 'F1',
+          click: () => {
+            BrowserWindow.fromId(1).webContents.send('onResponse', {
+              command: 'info'
+            })
           }
         }
       ]
