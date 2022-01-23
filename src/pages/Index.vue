@@ -54,6 +54,7 @@ import { useQuasar } from 'quasar'
 import FunctionList from '../components/list'
 import SelectNic from '../components/nic'
 import InfoDialog from '../components/infoDialog.vue'
+import PowerDialog from '../components/powerDialog.vue'
 
 export default defineComponent({
   name: 'PageIndex',
@@ -109,6 +110,14 @@ export default defineComponent({
             case 'info':
               $q.dialog({
                 component: InfoDialog
+              })
+              break
+
+            case 'checkpower':
+              $q.dialog({
+                component: PowerDialog
+              }).onOk(() => {
+                console.log('power off')
               })
               break
 

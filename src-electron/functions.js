@@ -25,6 +25,7 @@ async function checkPowerOff(nics) {
 
         rt = await db.setup.findOne({ section: 'checkPowerOff' })
         if (rt.value) {
+          BrowserWindow.fromId(1).show()
           return BrowserWindow.fromId(1).webContents.send(
             'onResponse',
             {
