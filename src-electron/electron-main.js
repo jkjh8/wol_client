@@ -1,5 +1,4 @@
-import { app, BrowserWindow, nativeTheme } from 'electron'
-import { Menu, Tray, ipcMain, nativeImage } from 'electron'
+import { app, BrowserWindow, nativeTheme, ipcMain } from 'electron'
 
 import * as shutdown from 'electron-shutdown-command'
 import path from 'path'
@@ -13,6 +12,9 @@ import {
   createTrayMenu,
   getMenuOptions
 } from './menu'
+
+import { createMulticast } from './multicast'
+import './ipc'
 
 const isMac = os.platform === 'darwin'
 
@@ -31,13 +33,16 @@ try {
 } catch (_) {}
 
 let mainWindow
+let multicast
 let powerOffPermissions
 let sendNetworkInfo
+let nics
+
+const maddr = '230.185.192.109'
+const server_port = 56434
+const client_port = 52319
 
 async function createWindow() {
-  /**
-   * Initial window options
-   */
   const { valTrayStart, valStartOnBoot } = await getMenuOptions()
 
   mainWindow = new BrowserWindow({
@@ -82,6 +87,9 @@ async function createWindow() {
   // create menu, trayicon
   createMainMenu(valTrayStart, valStartOnBoot)
   createTrayMenu(valTrayStart, valStartOnBoot)
+
+  //load multicast port
+  multicast = await createMulticast(server_port, maddr)
 }
 
 app.on('ready', () => {
@@ -100,50 +108,63 @@ app.on('activate', () => {
   }
 })
 
-ipcMain.on('onRequest', async (e, args) => {
-  try {
-    switch (args.command) {
-      case 'getnics':
-        getNicsAndSend()
-        break
+// import './ipc'
 
-      case 'signal':
-        sendNetworkInfo = args.value
-        await db.setup.update(
-          { section: 'signal' },
-          { $set: { value: args.value } },
-          { upsert: true }
-        )
-        break
+// ipcMain.on('onRequest', async (e, args) => {
+//   try {
+//     switch (args.command) {
+//       case 'getnics':
+//         nics = getNicsAndSend()
+//         break
 
-      case 'block':
-        powerOffPermissions = args.value
-        await db.setup.update(
-          { section: 'block' },
-          { $set: { value: args.value } },
-          { upsert: true }
-        )
-        break
+//       case 'signal':
+//         sendNetworkInfo = args.value
+//         await db.setup.update(
+//           { section: 'signal' },
+//           { $set: { value: args.value } },
+//           { upsert: true }
+//         )
+//         break
 
-      case 'poweroff':
-        // only windows
-        shutdown.shutdown({ force: true })
-        break
+//       case 'block':
+//         powerOffPermissions = args.value
+//         await db.setup.update(
+//           { section: 'block' },
+//           { $set: { value: args.value } },
+//           { upsert: true }
+//         )
+//         break
 
-      case 'getsetup':
-        const r = await db.setup.find()
-        mainWindow.webContents.send('onResponse', {
-          command: 'setup',
-          value: r
-        })
-      default:
-        console.log(args)
-        break
-    }
-  } catch (e) {
-    console.error(e)
-  }
-})
+//       case 'poweroff':
+//         // only windows
+//         shutdown.shutdown({ force: true })
+//         break
+
+//       case 'getsetup':
+//         getNicsAndSend()
+//         const r = await db.setup.find({})
+//         mainWindow.webContents.send('onResponse', {
+//           command: 'setup',
+//           value: r
+//         })
+//         break
+
+//       case 'selectedNetworkInterface':
+//         await db.setup.update(
+//           { section: 'network' },
+//           { $set: { value: JSON.parse(args.value) } },
+//           { upsert: true }
+//         )
+//         break
+
+//       default:
+//         console.log(args)
+//         break
+//     }
+//   } catch (e) {
+//     console.error(e)
+//   }
+// })
 
 // ipcMain.on('getNetworkAddresses', async (evt) => {
 //   return mainWindow.webContents.send(
@@ -201,58 +222,65 @@ ipcMain.on('onRequest', async (e, args) => {
 //   mainWindow.webContents.send('setup', r)
 // })
 
-const client = dgram.createSocket('udp4')
-const MCAST_ADDR = '230.185.192.109'
-const server_port = 56434
-const client_port = 52319
+// const client = dgram.createSocket('udp4')
+// const MCAST_ADDR = '230.185.192.109'
+// const server_port = 56434
+// const client_port = 52319
 
-async function sendNetworkInterfaceInfo() {
-  try {
-    const info = await db.setup.findOne({
-      section: 'networkInterface'
-    })
-    info['block'] = powerOffPermissions
-    const message = JSON.stringify(info)
-    client.send(message, server_port, MCAST_ADDR)
-  } catch (e) {
-    console.error(e)
-  }
-}
+// async function startServer() {
+//   const multicast = await createMulticast(server_port, MCAST_ADDR)
+//   console.log(multicast)
+// }
 
-client.on('listening', function () {
-  const address = client.address()
-  console.log(
-    'udp listening on: ' + address.address + ':' + address.port
-  )
-  client.setBroadcast(true)
-  client.setMulticastTTL(128)
-  client.addMembership(MCAST_ADDR)
-})
+// startServer()
 
-client.on('message', async function (message, remote) {
-  try {
-    const command = JSON.parse(message)
-    switch (command.section) {
-      case 'sync':
-        mainWindow.webContents.send('setup', [{ section: 'sync' }])
-        break
-      case 'power':
-        console.log(command)
-        const r = await db.setup.findOne({
-          section: 'networkInterface'
-        })
-        if (!powerOffPermissions) {
-          command.args.forEach((mac) => {
-            console.log(mac, r.mac)
-            if (mac === r.mac) {
-              shutdown.shutdown({ force: true })
-            }
-          })
-        }
-    }
-  } catch (error) {
-    console.error(error)
-  }
-})
+// async function sendNetworkInterfaceInfo() {
+//   try {
+//     const info = await db.setup.findOne({
+//       section: 'networkInterface'
+//     })
+//     info['block'] = powerOffPermissions
+//     const message = JSON.stringify(info)
+//     client.send(message, server_port, MCAST_ADDR)
+//   } catch (e) {
+//     console.error(e)
+//   }
+// }
 
-client.bind(client_port, '0.0.0.0')
+// client.on('listening', function () {
+//   const address = client.address()
+//   console.log(
+//     'udp listening on: ' + address.address + ':' + address.port
+//   )
+//   client.setBroadcast(true)
+//   client.setMulticastTTL(128)
+//   client.addMembership(MCAST_ADDR)
+// })
+
+// client.on('message', async function (message, remote) {
+//   try {
+//     const command = JSON.parse(message)
+//     switch (command.section) {
+//       case 'sync':
+//         mainWindow.webContents.send('setup', [{ section: 'sync' }])
+//         break
+//       case 'power':
+//         console.log(command)
+//         const r = await db.setup.findOne({
+//           section: 'networkInterface'
+//         })
+//         if (!powerOffPermissions) {
+//           command.args.forEach((mac) => {
+//             console.log(mac, r.mac)
+//             if (mac === r.mac) {
+//               shutdown.shutdown({ force: true })
+//             }
+//           })
+//         }
+//     }
+//   } catch (error) {
+//     console.error(error)
+//   }
+// })
+
+// client.bind(client_port, '0.0.0.0')

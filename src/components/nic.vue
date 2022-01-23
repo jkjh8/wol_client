@@ -6,6 +6,9 @@
       borderless
       label="Network Interface"
       :options="nics"
+      option-value="mac"
+      emit-value
+      map-options
       @update:model-value="fnSelect"
     >
       <template #selected-item="scope">
@@ -64,7 +67,7 @@ export default {
     const fnSelect = () => {
       window.FN.onRequest({
         command: 'selectnic',
-        value: JSON.stringify(selected.value)
+        value: selected.value
       })
     }
 

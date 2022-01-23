@@ -15,6 +15,8 @@
         </div>
 
         <div class="q-mr-sm">
+          <q-btn icon="refresh" @click="refresh"></q-btn>
+          <q-btn @click="getsetup" />
           <q-icon
             v-if="!sync"
             name="svguse:icons.svg#exclamation"
@@ -88,11 +90,24 @@ export default defineComponent({
             case 'signal':
               commit('setup/updateSignal', item.value)
               break
+
+            case 'network':
+              // console.log(item)
+              commit('nic/updateSelected', item.value)
+              break
           }
         })
       } catch (e) {
         console.error(e)
       }
+    }
+
+    const refresh = () => {
+      window.FN.onRequest({ command: 'getnics' })
+    }
+
+    const getsetup = () => {
+      window.FN.onRequest({ command: 'getsetup' })
     }
 
     onBeforeMount(() => {
@@ -105,6 +120,7 @@ export default defineComponent({
               break
 
             case 'setup':
+              console.log(args.value)
               setupParcing(args.value)
               break
 
@@ -116,6 +132,7 @@ export default defineComponent({
           console.error(e)
         }
       })
+
       window.FN.onRequest({ command: 'getsetup' })
       // window.Fn.onResponse((data) => {
       //   data.forEach((item) => {
@@ -156,7 +173,8 @@ export default defineComponent({
       // })
     })
     return {
-      //
+      refresh,
+      getsetup
     }
   }
 })

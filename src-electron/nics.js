@@ -9,6 +9,7 @@ function getNics() {
       value.forEach((nic) => {
         if (!nic.internal && nic.family == 'IPv4') {
           arr.push({
+            hostname: os.hostname(),
             name: key,
             address: nic.address,
             mac: nic.mac
@@ -29,6 +30,7 @@ function getNicsAndSend() {
       command: 'nics',
       value: nics
     })
+    return nics
   } catch (e) {
     console.error(e)
   }
