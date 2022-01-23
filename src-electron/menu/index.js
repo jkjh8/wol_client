@@ -34,6 +34,7 @@ function createMainMenu(trayicon, bootonstart, checkpower) {
   valTrayStart = trayicon
   valStartOnBoot = bootonstart
   valCheckPowerOff = checkpower
+  console.log(valTrayStart, valStartOnBoot, valCheckPowerOff)
 
   mainMenu = Menu.buildFromTemplate([
     {
@@ -273,10 +274,6 @@ async function clickCheckPowerOff() {
 }
 
 async function getMenuOptions() {
-  let valTrayStart = false
-  let valStartOnBoot = false
-  let valPowerOff = false
-
   const rt = await db.setup.findOne({ section: 'trayIconStart' })
   if (rt && rt.value) {
     valTrayStart = rt.value
@@ -288,10 +285,10 @@ async function getMenuOptions() {
   }
   const rck = await db.setup.findOne({ section: 'checkPowerOff' })
   if (rck && rck.value) {
-    valPowerOff = rck.value
+    valCheckPowerOff = rck.value
   }
 
-  return { valTrayStart, valStartOnBoot, valPowerOff }
+  return { valTrayStart, valStartOnBoot, valCheckPowerOff }
 }
 
 export { createMainMenu, createTrayMenu, getMenuOptions }
