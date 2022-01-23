@@ -31,6 +31,10 @@
 		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 	</symbol>
 
+	<symbol id="info-circle" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+</symbol>
+
   <symbol id="ethernet" x="0px" y="0px" viewBox="0 0 503.607 503.607" style="enable-background:new 0 0 503.607 503.607;" xml:space="preserve">
 <g transform="translate(1 1)">
 	<polygon style="fill:#FFE100;" points="292.77,326.344 208.836,326.344 175.262,200.443 175.262,108.115 326.344,108.115 
@@ -88,36 +92,6 @@
 		c5.036,0,8.393,3.357,8.393,8.393C334.738,197.085,331.38,200.443,326.344,200.443z"/>
 	<path d="M385.098,502.607h-268.59c-5.036,0-8.393-3.357-8.393-8.393c0-5.036,3.357-8.393,8.393-8.393h268.59
 		c5.036,0,8.393,3.357,8.393,8.393C393.492,499.249,390.134,502.607,385.098,502.607z"/>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
-</g>
-<g>
 </g>
 </symbol>
 </svg>

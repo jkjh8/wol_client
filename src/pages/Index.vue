@@ -15,8 +15,6 @@
         </div>
 
         <div class="q-mr-sm">
-          <q-btn icon="refresh" @click="refresh"></q-btn>
-          <q-btn @click="getsetup" />
           <q-icon
             v-if="!sync"
             name="svguse:icons.svg#exclamation"
@@ -46,38 +44,25 @@
       </div>
     </div>
   </q-page>
-
-  <q-dialog v-model="mdPowerOff">
-    <div class="fit shadow-0 progress">
-      <q-circular-progress
-        class="text-white"
-        show-value
-        :value="count"
-        indeterminate
-        size="150px"
-        color="grey-8"
-      />
-      <div class="btns">
-        <q-btn class="btn" @click="fnClearTimerPowerOff">취소</q-btn>
-        <q-btn class="btn" color="negative" @click="fnPowerOff"
-          >즉시끄기</q-btn
-        >
-      </div>
-    </div>
-  </q-dialog>
 </template>
 
 <script>
 import { defineComponent, ref, onBeforeMount } from 'vue'
 import { useStore } from 'vuex'
+import { useQuasar } from 'quasar'
+
 import FunctionList from '../components/list'
 import SelectNic from '../components/nic'
+import InfoDialog from '../components/infoDialog.vue'
 
 export default defineComponent({
   name: 'PageIndex',
   components: { FunctionList, SelectNic },
   setup() {
     const { commit } = useStore()
+    const $q = useQuasar()
+    const sync = ref(false)
+    const syncTimer = ref(null)
 
     const setupParcing = (setup) => {
       try {
@@ -92,7 +77,6 @@ export default defineComponent({
               break
 
             case 'network':
-              // console.log(item)
               commit('nic/updateSelected', item.value)
               break
           }
@@ -102,28 +86,41 @@ export default defineComponent({
       }
     }
 
-    const refresh = () => {
-      window.FN.onRequest({ command: 'getnics' })
-    }
-
-    const getsetup = () => {
-      window.FN.onRequest({ command: 'getsetup' })
-    }
-
     onBeforeMount(() => {
       window.FN.onResponse((args) => {
         try {
           switch (args.command) {
+            case 'sync':
+              clearTimeout(syncTimer.value)
+              sync.value = true
+              syncTimer.value = setTimeout(() => {
+                sync.value = false
+              }, 9000)
+
+              break
             case 'nics':
-              console.log(args)
               commit('nic/updateNics', args.value)
               break
 
             case 'setup':
-              console.log(args.value)
               setupParcing(args.value)
               break
 
+            case 'info':
+              $q.dialog({
+                component: InfoDialog
+              })
+              break
+
+            case 'factory_reset':
+              $q.dialog({
+                title: '공장 초기화',
+                message: '어플 설정을 초기상태로 되돌립니다.',
+                cancel: true,
+                persistent: true
+              }).onOk(async () => {
+                console.log('reset')
+              })
             default:
               console.log(args)
               break
@@ -134,47 +131,9 @@ export default defineComponent({
       })
 
       window.FN.onRequest({ command: 'getsetup' })
-      // window.Fn.onResponse((data) => {
-      //   data.forEach((item) => {
-      //     switch (item.section) {
-      //       case 'networkInterface':
-      //         selected.value = {
-      //           name: item.name,
-      //           address: item.address,
-      //           mac: item.mac,
-      //         }
-      //         console.log(item)
-      //         break
-      //       case 'block':
-      //         block.value = item.value
-      //         window.Fn.set({ key: 'block', value: block.value })
-      //         break
-      //       case 'signal':
-      //         signal.value = item.value
-      //         window.Fn.set({ key: 'signal', value: signal.value })
-      //         break
-      //       case 'sync':
-      //         sync.value = true
-      //         timeout.value = 10
-      //         break
-      //     }
-      //     console.log(nics.value[0] === selected.value)
-      //     if (nics.value.includes(selected.value)) {
-      //       console.log('not has ')
-      //       const networkInterface = {
-      //         name: nics.value[0].name,
-      //         address: nics.value[0].address,
-      //         mac: nics.value[0].mac,
-      //       }
-      //       selected.value = networkInterface
-      //       fnUpdateNetworkInterface()
-      //     }
-      //   })
-      // })
     })
     return {
-      refresh,
-      getsetup
+      sync
     }
   }
 })

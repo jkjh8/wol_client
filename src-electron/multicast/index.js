@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron'
 import dgram from 'dgram'
 import db from '../db'
 
-import * as shutdown from 'electron-shutdown-command'
+import { checkPowerOff } from '../functions'
 
 let multicast
 
@@ -19,7 +19,7 @@ function createMulticast(port, maddr) {
         multicast.addMembership(maddr)
 
         multicast.on('message', (message) => {
-          console.log(message)
+          parse(message)
         })
 
         resolve(multicast)
@@ -28,6 +28,27 @@ function createMulticast(port, maddr) {
       reject(null, e)
     }
   })
+}
+
+async function parse(args) {
+  try {
+    const message = JSON.parse(args)
+    switch (message.command) {
+      case 'sync':
+        BrowserWindow.fromId(1).webContents.send('onResponse', {
+          command: 'sync'
+        })
+        break
+      case 'poweroff':
+        checkPowerOff(message.value)
+        break
+      default:
+        console.log('recv= ', message)
+        break
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 export { multicast, createMulticast }

@@ -28,10 +28,12 @@ let tray
 
 let valTrayStart = false
 let valStartOnBoot = false
+let valCheckPowerOff = false
 
-function createMainMenu(trayicon, bootonstart) {
+function createMainMenu(trayicon, bootonstart, checkpower) {
   valTrayStart = trayicon
   valStartOnBoot = bootonstart
+  valCheckPowerOff = checkpower
 
   mainMenu = Menu.buildFromTemplate([
     {
@@ -57,6 +59,20 @@ function createMainMenu(trayicon, bootonstart) {
         },
         { type: 'separator' },
         {
+          label: '종료',
+          type: 'normal',
+          icon: img_close.resize({ width: 16, height: 16 }),
+          accelerator: 'alt+F4',
+          click: () => {
+            app.exit(0)
+          }
+        }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        {
           label: '트레이아이콘 시작',
           id: 'menu_traystart',
           type: 'checkbox',
@@ -75,21 +91,16 @@ function createMainMenu(trayicon, bootonstart) {
             clickBootOnStart()
           }
         },
-        { type: 'separator' },
         {
-          label: '종료',
-          type: 'normal',
-          icon: img_close.resize({ width: 16, height: 16 }),
-          accelerator: 'alt+F4',
+          label: '전원차단 확인',
+          id: 'menu_power_check',
+          type: 'checkbox',
+          checked: valCheckPowerOff,
           click: () => {
-            app.exit(0)
+            clickCheckPowerOff()
           }
-        }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
+        },
+        { type: 'separator' },
         {
           label: 'Reload',
           type: 'normal',
@@ -125,10 +136,10 @@ function createMainMenu(trayicon, bootonstart) {
       ]
     },
     {
-      label: 'Help',
+      label: 'Helf',
       submenu: [
         {
-          label: 'Info',
+          label: 'About',
           type: 'normal',
           icon: img_info.resize({ width: 16, height: 16 }),
           accelerator: 'F1',
@@ -146,7 +157,11 @@ function createMainMenu(trayicon, bootonstart) {
   return mainMenu
 }
 
-function createTrayMenu(valTrayStart, valStartOnBoot) {
+function createTrayMenu(trayicon, bootonstart, checkpower) {
+  valTrayStart = trayicon
+  valStartOnBoot = bootonstart
+  valCheckPowerOff = checkpower
+
   trayMenu = Menu.buildFromTemplate([
     {
       label: '열기',
@@ -184,6 +199,15 @@ function createTrayMenu(valTrayStart, valStartOnBoot) {
       checked: valStartOnBoot,
       click: () => {
         clickBootOnStart()
+      }
+    },
+    {
+      label: '전원차단 확인',
+      id: 'tray_power_check',
+      type: 'checkbox',
+      checked: valCheckPowerOff,
+      click: () => {
+        clickCheckPowerOff()
       }
     },
     { type: 'separator' },
@@ -235,9 +259,23 @@ async function clickBootOnStart() {
   )
 }
 
+async function clickCheckPowerOff() {
+  valCheckPowerOff = !valCheckPowerOff
+  mainMenu.getMenuItemById('menu_power_check').checked =
+    valCheckPowerOff
+  trayMenu.getMenuItemById('tray_power_check').checked =
+    valCheckPowerOff
+  await db.setup.update(
+    { section: 'checkPowerOff' },
+    { $set: { value: valCheckPowerOff } },
+    { upsert: true }
+  )
+}
+
 async function getMenuOptions() {
   let valTrayStart = false
   let valStartOnBoot = false
+  let valPowerOff = false
 
   const rt = await db.setup.findOne({ section: 'trayIconStart' })
   if (rt && rt.value) {
@@ -248,8 +286,12 @@ async function getMenuOptions() {
   if (rb && rb.value) {
     valStartOnBoot = rb.value
   }
+  const rck = await db.setup.findOne({ section: 'checkPowerOff' })
+  if (rck && rck.value) {
+    valPowerOff = rck.value
+  }
 
-  return { valTrayStart, valStartOnBoot }
+  return { valTrayStart, valStartOnBoot, valPowerOff }
 }
 
 export { createMainMenu, createTrayMenu, getMenuOptions }

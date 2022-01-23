@@ -4,6 +4,7 @@ import * as shutdown from 'electron-shutdown-command'
 import db from '../db'
 import { multicast } from '../multicast'
 import { getNicsAndSend } from '../nics'
+import { getSetup } from '../functions'
 
 ipcMain.on('onRequest', async (e, args) => {
   const mainWindow = BrowserWindow.fromId(1)
@@ -38,19 +39,31 @@ ipcMain.on('onRequest', async (e, args) => {
       case 'getsetup':
         getNicsAndSend()
         const r = await db.setup.find({})
-        mainWindow.webContents.send('onResponse', {
-          command: 'setup',
-          value: r
-        })
-        multicast.send('setup', 12340, '230.123.123.123')
+        getSetup()
+        // multicast.send('setup', 12340, '230.123.123.123')
         break
 
       case 'selectnic':
         await db.setup.update(
           { section: 'network' },
-          { $set: { value: JSON.parse(args.value) } },
+          { $set: { value: args.value } },
           { upsert: true }
         )
+        break
+
+      case 'blockpoweroff':
+        const nics = getNicsAndSend()
+        const nic = await db.setup.findOne({ section: 'network' })
+        nics.forEach((item) => {
+          if (item.mac === nic) {
+            multicast.send(
+              JSON.stringify({
+                command: 'blockpoweroff',
+                nic: item
+              })
+            )
+          }
+        })
         break
 
       default:
