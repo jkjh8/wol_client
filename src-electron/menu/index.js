@@ -2,7 +2,7 @@ import { app, Menu, Tray, nativeImage, BrowserWindow } from 'electron'
 
 import db from '../db'
 import { getNicsAndSend } from '../nics'
-import { getSetup } from '../functions'
+import { getSetup, sendNic } from '../functions'
 
 const img_show = nativeImage.createFromPath(
   'src-electron/icons/max.png'
@@ -108,7 +108,7 @@ function createMainMenu(trayicon, bootonstart, checkpower) {
           icon: img_reset.resize({ width: 16, height: 16 }),
           accelerator: 'CommandOrControl+R',
           click: async () => {
-            getNicsAndSend()
+            await sendNic()
             getSetup()
           }
         },

@@ -60,11 +60,16 @@ async function sync() {
 
 async function sendNic() {
   try {
+    console.log('sendnic')
     const nics = getNicsAndSend()
-    const nic = db.setup.findOne({ section: 'network' })
+    const nic = await db.setup.findOne({ section: 'network' })
+    const block = await db.setup.findOne({ section: 'block' })
     nics.forEach((item) => {
-      if (item.mac === nic) {
-        multicastSend(item)
+      if (item.mac === nic.value) {
+        multicastSend({
+          command: 'nic',
+          value: { ...item, block: block.value }
+        })
       }
     })
   } catch (e) {
