@@ -60,7 +60,8 @@ async function sync() {
 
 async function sendNic() {
   try {
-    console.log('sendnic')
+    const signal = await db.setup.findOne({ section: 'signal' })
+    if (!signal.value) return null
     const nics = getNicsAndSend()
     const nic = await db.setup.findOne({ section: 'network' })
     const block = await db.setup.findOne({ section: 'block' })

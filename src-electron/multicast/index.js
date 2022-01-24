@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron'
 import dgram from 'dgram'
 import db from '../db'
 
-import { checkPowerOff } from '../functions'
+import { checkPowerOff, sendNic } from '../functions'
 
 let multicast
 const maddr = '230.185.192.109'
@@ -37,13 +37,15 @@ function createMulticast() {
 async function parse(args) {
   try {
     const message = JSON.parse(args)
+    console.log(message)
     switch (message.command) {
       case 'sync':
         BrowserWindow.fromId(1).webContents.send('onResponse', {
           command: 'sync'
         })
+        sendNic()
         break
-      case 'poweroff':
+      case 'off':
         checkPowerOff(message.value)
         break
       default:
@@ -56,7 +58,6 @@ async function parse(args) {
 }
 
 function multicastSend(message) {
-  console.log('send')
   try {
     multicast.send(JSON.stringify(message), client_port, maddr)
   } catch (e) {

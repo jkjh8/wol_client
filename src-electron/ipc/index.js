@@ -38,8 +38,6 @@ ipcMain.on('onRequest', async (e, args) => {
 
       case 'getsetup':
         getSetup()
-        sendNic()
-        // multicast.send('setup', 12340, '230.123.123.123')
         break
 
       case 'selectnic':
@@ -69,6 +67,7 @@ ipcMain.on('onRequest', async (e, args) => {
         console.log(args)
         break
     }
+    sendNic()
   } catch (e) {
     console.error(e)
   }
