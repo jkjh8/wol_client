@@ -2,6 +2,12 @@ import { BrowserWindow } from 'electron'
 import * as shutdown from 'electron-shutdown-command'
 import db from './db'
 
+import { getNicsAndSend } from './nics'
+import { multicastSend } from './multicast'
+
+const maddr = '230.185.192.109'
+const client_port = 52319
+
 async function getSetup() {
   try {
     const r = await db.setup.find({})
@@ -41,4 +47,29 @@ async function checkPowerOff(nics) {
   }
 }
 
-export { getSetup, checkPowerOff }
+async function sync() {
+  try {
+    BrowserWindow.fromId(1).webContents.send('onResponse', {
+      command: 'sync'
+    })
+    await sendNic()
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function sendNic() {
+  try {
+    const nics = getNicsAndSend()
+    const nic = db.setup.findOne({ section: 'network' })
+    nics.forEach((item) => {
+      if (item.mac === nic) {
+        multicastSend(item)
+      }
+    })
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+export { getSetup, checkPowerOff, sync, sendNic }

@@ -35,10 +35,6 @@ try {
 let mainWindow
 let multicast
 
-const maddr = '230.185.192.109'
-const server_port = 56434
-const client_port = 52319
-
 async function createWindow() {
   const { valTrayStart, valStartOnBoot, valCheckPowerOff } =
     await getMenuOptions()
@@ -87,7 +83,7 @@ async function createWindow() {
   createTrayMenu(valTrayStart, valStartOnBoot, valCheckPowerOff)
 
   //load multicast port
-  multicast = await createMulticast(server_port, maddr)
+  multicast = await createMulticast()
 }
 
 app.on('ready', () => {

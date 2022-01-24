@@ -2,9 +2,9 @@ import { BrowserWindow, ipcMain } from 'electron'
 import * as shutdown from 'electron-shutdown-command'
 
 import db from '../db'
-import { multicast } from '../multicast'
+import { multicast, multicastSend } from '../multicast'
 import { getNicsAndSend } from '../nics'
-import { getSetup } from '../functions'
+import { getSetup, sendNic } from '../functions'
 
 ipcMain.on('onRequest', async (e, args) => {
   const mainWindow = BrowserWindow.fromId(1)
@@ -37,9 +37,8 @@ ipcMain.on('onRequest', async (e, args) => {
         break
 
       case 'getsetup':
-        getNicsAndSend()
-        const r = await db.setup.find({})
         getSetup()
+        sendNic()
         // multicast.send('setup', 12340, '230.123.123.123')
         break
 
