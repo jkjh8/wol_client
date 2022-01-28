@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <div style="padding: 10% 10% 0 10%">
+    <div style="padding: 5% 10% 0 10%">
       <div class="row justify-between items-center">
         <div class="row items-center">
           <q-icon
@@ -117,7 +117,9 @@ export default defineComponent({
               $q.dialog({
                 component: PowerDialog
               }).onOk(() => {
-                console.log('power off')
+                window.FN.onRequest({
+                  command: 'poweroff'
+                })
               })
               break
 
@@ -128,7 +130,7 @@ export default defineComponent({
                 cancel: true,
                 persistent: true
               }).onOk(async () => {
-                console.log('reset')
+                widnow.FN.onRequest({ command: 'factory_reset' })
               })
             default:
               console.log(args)

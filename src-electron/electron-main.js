@@ -1,12 +1,7 @@
-import { app, BrowserWindow, nativeTheme, ipcMain } from 'electron'
-
-import * as shutdown from 'electron-shutdown-command'
+import { app, BrowserWindow, nativeTheme } from 'electron'
 import path from 'path'
 import os from 'os'
-import dgram from 'dgram'
-import db from './db'
 
-import { getNicsAndSend } from './nics'
 import {
   createMainMenu,
   createTrayMenu,
@@ -40,7 +35,7 @@ async function createWindow() {
     await getMenuOptions()
 
   mainWindow = new BrowserWindow({
-    width: 1200,
+    width: 600,
     height: 500,
     useContentSize: true,
     show: !valTrayStart,
