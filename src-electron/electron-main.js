@@ -1,12 +1,24 @@
-import { app, BrowserWindow, nativeTheme, ipcMain } from 'electron'
-
-import * as shutdown from 'electron-shutdown-command'
+import { app, BrowserWindow, nativeTheme } from 'electron'
 import path from 'path'
 import os from 'os'
-import dgram from 'dgram'
-import db from './db'
 
-import { getNicsAndSend } from './nics'
+// 중복실행 방지
+app.requestSingleInstanceLock({
+  key: '1qw2e3r4aldkeos0sl123ao123ads23'
+})
+app.on('second-instance', (e, argv, cwd) => {
+  console.log(e, argv, cwd)
+  dialog
+    .showMessageBox({
+      message: '중복 실행 오류',
+      buttons: ['ok']
+    })
+    .then((r) => {
+      console.log(r)
+    })
+  app.exit(0)
+})
+
 import {
   createMainMenu,
   createTrayMenu,
