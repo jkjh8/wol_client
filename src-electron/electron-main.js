@@ -2,6 +2,7 @@ import { app, BrowserWindow, nativeTheme } from 'electron'
 import path from 'path'
 import os from 'os'
 
+<<<<<<< HEAD
 // 중복실행 방지
 app.requestSingleInstanceLock({
   key: '1qw2e3r4aldkeos0sl123ao123ads23'
@@ -19,6 +20,8 @@ app.on('second-instance', (e, argv, cwd) => {
   app.exit(0)
 })
 
+=======
+>>>>>>> cb77c1ffe1f3f80216ce1ec504b33587c9ed2ff1
 import {
   createMainMenu,
   createTrayMenu,
@@ -52,7 +55,7 @@ async function createWindow() {
     await getMenuOptions()
 
   mainWindow = new BrowserWindow({
-    width: 1200,
+    width: 600,
     height: 500,
     useContentSize: true,
     show: !valTrayStart,

@@ -63,6 +63,22 @@ ipcMain.on('onRequest', async (e, args) => {
         })
         break
 
+      case 'factory_reset':
+        await db.setup.update(
+          { section: 'network' },
+          { $set: { value: null } }
+        )
+        await db.setup.update(
+          { section: 'signal' },
+          { $set: { value: true } }
+        )
+        await db.setup.update(
+          { section: 'block' },
+          { $set: { value: false } }
+        )
+        getNicsAndSend()
+        getSetup()
+
       default:
         console.log(args)
         break

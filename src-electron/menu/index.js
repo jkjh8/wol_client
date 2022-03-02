@@ -1,25 +1,26 @@
 import { app, Menu, Tray, nativeImage, BrowserWindow } from 'electron'
+import path from 'path'
 
 import db from '../db'
 import { getNicsAndSend } from '../nics'
 import { getSetup, sendNic } from '../functions'
 
+const img_path = process.env.DEV ? 'public' : process.resourcesPath
+
 const img_show = nativeImage.createFromPath(
-  'src-electron/icons/max.png'
+  path.join(img_path, 'max.png')
 )
 const img_hide = nativeImage.createFromPath(
-  'src-electron/icons/min.png'
+  path.join(img_path, 'min.png')
 )
 const img_close = nativeImage.createFromPath(
-  'src-electron/icons/close.png'
+  path.join(img_path, 'close.png')
 )
-
 const img_reset = nativeImage.createFromPath(
-  'src-electron/icons/reset.png'
+  path.join(img_path, 'reset.png')
 )
-
 const img_info = nativeImage.createFromPath(
-  'src-electron/icons/info.png'
+  path.join(img_path, 'info.png')
 )
 
 let mainMenu
@@ -31,10 +32,17 @@ let valStartOnBoot = false
 let valCheckPowerOff = false
 
 function createMainMenu(trayicon, bootonstart, checkpower) {
-  valTrayStart = trayicon
-  valStartOnBoot = bootonstart
-  valCheckPowerOff = checkpower
-  console.log(valTrayStart, valStartOnBoot, valCheckPowerOff)
+  if (trayicon) {
+    valTrayStart = trayicon
+  }
+
+  if (bootonstart) {
+    valStartOnBoot = bootonstart
+  }
+
+  if (valCheckPowerOff) {
+    valCheckPowerOff = checkpower
+  }
 
   mainMenu = Menu.buildFromTemplate([
     {
@@ -124,16 +132,16 @@ function createMainMenu(trayicon, bootonstart, checkpower) {
             getSetup()
           }
         },
-        { type: 'separator' },
-        {
-          label: 'Factory Reset',
-          type: 'normal',
-          click: () => {
-            BrowserWindow.fromId(1).webContents.send('onResponse', {
-              command: 'factory_reset'
-            })
-          }
-        }
+        { type: 'separator' }
+        // {
+        //   label: 'Factory Reset',
+        //   type: 'normal',
+        //   click: () => {
+        //     BrowserWindow.fromId(1).webContents.send('onResponse', {
+        //       command: 'factory_reset'
+        //     })
+        //   }
+        // }
       ]
     },
     {
